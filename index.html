@@ -68,7 +68,7 @@
 
   /* Planet info panel */
   #info-panel{
-    position:absolute;bottom:32px;left:32px;
+    position:absolute;top:50%;right:32px;transform:translateY(-50%);
     width:280px;
     background:rgba(2,8,24,.85);
     border:1px solid rgba(100,180,255,.2);
@@ -77,9 +77,9 @@
     backdrop-filter:blur(12px);
     pointer-events:auto;
     transition:opacity .3s,transform .3s;
-    opacity:0;transform:translateY(12px);
+    opacity:0;transform:translateY(-50%) translateX(12px);
   }
-  #info-panel.show{opacity:1;transform:translateY(0)}
+  #info-panel.show{opacity:1;transform:translateY(-50%) translateX(0)}
   #info-panel .planet-name{
     font-family:'Orbitron',monospace;font-size:13px;font-weight:700;
     color:#7ad4ff;letter-spacing:.1em;margin-bottom:4px;
@@ -105,6 +105,34 @@
     padding:6px 12px;transition:all .2s;
   }
   #info-panel .link-btn:hover{background:rgba(91,200,255,.1);}
+  #info-panel .gallery{
+    display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;
+  }
+  #info-panel .gallery::-webkit-scrollbar{height:3px;}
+  #info-panel .gallery::-webkit-scrollbar-thumb{background:rgba(122,212,255,.3);border-radius:2px;}
+  #info-panel .gallery img{
+    width:80px;height:50px;object-fit:cover;border-radius:6px;cursor:pointer;
+    border:1px solid rgba(100,180,255,.2);transition:all .2s;flex-shrink:0;
+  }
+  #info-panel .gallery img:hover{border-color:#7ad4ff;transform:scale(1.05);}
+  #info-panel .links{display:flex;gap:8px;flex-wrap:wrap;}
+  #info-panel .github-btn{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:11px;color:#fff;text-decoration:none;
+    font-family:'Orbitron',monospace;letter-spacing:.08em;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.2);border-radius:6px;
+    padding:6px 12px;transition:all .2s;
+  }
+  #info-panel .github-btn:hover{background:rgba(255,255,255,.15);}
+
+  /* Lightbox */
+  #lightbox{
+    position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:100;
+    display:none;align-items:center;justify-content:center;cursor:pointer;
+  }
+  #lightbox.show{display:flex;}
+  #lightbox img{max-width:90%;max-height:90%;border-radius:8px;}
 
   /* Floating planet labels (auto popups) */
   #planet-labels{position:absolute;inset:0;pointer-events:none;z-index:9;}
@@ -220,12 +248,71 @@
   }
   .ndot.active{background:#7ad4ff;border-color:#7ad4ff;box-shadow:0 0 8px rgba(122,212,255,.6);}
   .ndot:hover:not(.active){background:rgba(255,255,255,.5);}
+
+  /* Project sidebar */
+  #project-sidebar{
+    position:absolute;top:80px;left:32px;bottom:100px;width:200px;
+    background:rgba(2,8,24,.75);
+    border:1px solid rgba(100,180,255,.18);
+    border-radius:12px;
+    backdrop-filter:blur(12px);
+    pointer-events:auto;
+    overflow:hidden;
+    display:flex;flex-direction:column;
+  }
+  #sidebar-header{
+    padding:10px 14px 8px;
+    border-bottom:1px solid rgba(100,180,255,.12);
+  }
+  #sidebar-header h2{
+    font-family:'Orbitron',monospace;font-size:10px;font-weight:600;
+    color:rgba(122,212,255,.8);letter-spacing:.14em;margin:0;
+  }
+  #project-list{
+    flex:1;overflow-y:auto;padding:8px 0;
+  }
+  #project-list::-webkit-scrollbar{width:4px;}
+  #project-list::-webkit-scrollbar-track{background:transparent;}
+  #project-list::-webkit-scrollbar-thumb{background:rgba(122,212,255,.25);border-radius:2px;}
+  .proj-item{
+    display:flex;align-items:center;gap:8px;
+    padding:7px 12px;cursor:pointer;
+    transition:all .2s;border-left:2px solid transparent;
+  }
+  .proj-item:hover{
+    background:rgba(122,212,255,.06);
+  }
+  .proj-item.active{
+    background:rgba(122,212,255,.1);
+    border-left-color:#7ad4ff;
+  }
+  .proj-item .proj-dot{
+    width:10px;height:10px;border-radius:50%;
+    flex-shrink:0;box-shadow:0 0 6px currentColor;
+  }
+  .proj-item .proj-info{
+    flex:1;min-width:0;
+  }
+  .proj-item .proj-planet{
+    font-family:'Orbitron',monospace;font-size:8px;
+    color:rgba(122,212,255,.6);letter-spacing:.1em;
+    text-transform:uppercase;margin-bottom:2px;
+  }
+  .proj-item .proj-title{
+    font-size:11px;font-weight:500;color:#fff;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .proj-item .proj-tech{
+    font-size:8px;color:rgba(200,210,230,.5);margin-top:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
 </style>
 </head>
 <body>
 <div id="app">
+  <div id="lightbox" onclick="this.classList.remove('show')"><img id="lb-img" src=""></div>
   <div id="loader">
-    <h2>INITIALIZING SOLAR SYSTEM</h2>
+    <h2>INITIALIZING SOLAR PORTFOLIO SYSTEM</h2>
     <div id="loader-bar"><div id="loader-fill"></div></div>
   </div>
   <canvas id="c"></canvas>
@@ -276,8 +363,14 @@
   </div>
   <div id="hud">
     <div id="nameplate">
-      <h1>NGUYEN VAN DEV</h1>
+      <h1>LE PHU THAO</h1>
       <p>Full-Stack Developer</p>
+    </div>
+    <div id="project-sidebar">
+      <div id="sidebar-header">
+        <h2>⚡ PROJECTS</h2>
+      </div>
+      <div id="project-list"></div>
     </div>
     <div id="cam-toggle">
       <button class="cam-btn active" id="btn-overview">⊙ OVERVIEW</button>
@@ -289,8 +382,12 @@
       <div class="planet-name" id="ip-planet"></div>
       <div class="project-title" id="ip-title"></div>
       <div class="desc" id="ip-desc"></div>
+      <div class="gallery" id="ip-gallery"></div>
       <div class="tags" id="ip-tags"></div>
-      <a class="link-btn" href="#" id="ip-link">↗ VIEW PROJECT</a>
+      <div class="links">
+        <a class="link-btn" href="#" id="ip-link" target="_blank">↗ DEMO</a>
+        <a class="github-btn" href="#" id="ip-github" target="_blank">⚙ GITHUB</a>
+      </div>
     </div>
     <div id="speed-wrap">
       <div id="speed-label">ORBIT SPEED</div>
@@ -303,86 +400,103 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
+// ══════════════════════════════════════════════════════════════
+// CONFIG - Change this before deploy
+// ══════════════════════════════════════════════════════════════
+const IS_LOCAL = false; // Set to false when deploy to GitHub Pages
+const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/phuthao/phuthao.github.io/main/';
+const IMG_BASE = IS_LOCAL ? '' : GITHUB_BASE_URL;
+// ══════════════════════════════════════════════════════════════
+
 const PLANETS = [
   {
-    name:'Mercury', label:'E-Commerce Platform',
+    name:'Mercury', label:'Wizard Claude',
     color:0xb5b5b5, emissive:0x111111,
     radius:0.38, orbitR:10, speed:0.0241, tilt:0.03,
     tex:'mercurymap.jpg', bump:'mercurybump.jpg', bumpScale:0.04,
-    desc:'Full-stack shopping platform with real-time inventory tracking, Stripe payments & order management.',
-    tech:['React','Node.js','MongoDB','Stripe'],
+    desc:'Internal dev automation tool. Paste docs → AI analyzes & suggests branch names → Preview UI mockups & API specs → One-click setup isolated environment with Claude Code. Reduced feature setup from 30min to under 2min.',
+    tech:['Vue 3','Node.js','Claude AI','OpenClaw'],
     link:'#'
   },
   {
-    name:'Venus', label:'AI Chat Assistant',
+    name:'Venus', label:'AI Low-Code Builder',
     color:0xe8c56a, emissive:0x221100,
     radius:0.95, orbitR:15, speed:0.0175, tilt:0.05,
     atm:0xe7b25a, atmPow:4.2,
     tex:'venusmap.jpg', bump:'venusbump.jpg', bumpScale:0.035,
-    desc:'LLM-powered support bot with context memory, multi-language support and admin analytics dashboard.',
-    tech:['Python','FastAPI','LangChain','Redis'],
+    desc:'AI-powered low-code platform. Analyze requirements → auto-generate database schema → create REST API via Directus → build UI with Budibase. From idea to working app in minutes.',
+    tech:['AI','Directus','Budibase','Low-Code'],
     link:'#'
   },
   {
-    name:'Earth', label:'Task Manager',
+    name:'Earth', label:'Vietnamese Chat Classifier',
     color:0x4a9de8, emissive:0x001122,
     radius:1.0, orbitR:21, speed:0.0100, tilt:0.41,
     atm:0x5aa9ff, atmPow:3.0,
     tex:'earthmap1k.jpg', bump:'earthbump1k.jpg', bumpScale:0.04,
     spec:'earthspec1k.jpg', clouds:'earthcloudmap.jpg',
-    desc:'Real-time collaborative kanban board with drag-and-drop, team roles, notifications and analytics.',
-    tech:['Next.js','Prisma','Socket.io','PostgreSQL'],
+    desc:'Fine-tuned PhoBERT model to classify Vietnamese chat intent - distinguishing between health data analysis requests vs casual conversation.',
+    tech:['Python','PhoBERT','NLP','Fine-tuning'],
     link:'#'
   },
   {
-    name:'Mars', label:'Crypto Tracker',
+    name:'Mars', label:'AI Health Assistant',
     color:0xd4563a, emissive:0x1a0800,
     radius:0.53, orbitR:28, speed:0.0053, tilt:0.44,
     atm:0xd97a4a, atmPow:5.0,
     tex:'marsmap1k.jpg', bump:'marsbump1k.jpg', bumpScale:0.05,
-    desc:'Live crypto portfolio dashboard with price alerts, historical charts and DeFi wallet integration.',
-    tech:['Vue 3','D3.js','WebSocket','CoinGecko API'],
+    desc:'RAG Flow + Agent AI integrated with Zalo OA. Auto-summarize conversations, analyze health data (meals, blood sugar, weight, exercise) and provide personalized insights to users.',
+    tech:['Azure OpenAI','RAG','Zalo OA API','.NET'],
     link:'#'
   },
   {
-    name:'Jupiter', label:'Social Platform',
+    name:'Jupiter', label:'CI-CD for Mobile Flutter',
     color:0xc8a472, emissive:0x110800,
     radius:2.8, orbitR:40, speed:0.0084, tilt:0.05,
     atm:0xe0c79a, atmPow:4.0, gas:true,
     tex:'jupitermap.jpg',
-    desc:'Micro-blogging platform with feed algorithm, media uploads, live notifications and monetization.',
-    tech:['React','GraphQL','Redis','AWS S3'],
+    desc:'Self-hosted CI/CD pipelines for Web, API, WordPress & Mobile (Android/iOS). Zero 3rd-party costs - only server hosting. Automated builds, testing, deployment with Grafana/Prometheus monitoring.',
+    tech:['Docker','Jenkins','GitHub Actions','Linux'],
+    images:['src/CICD-MOBILE/android.png','src/CICD-MOBILE/ios.png'],
     link:'#'
   },
   {
-    name:'Saturn', label:'DevOps Dashboard',
+    name:'Saturn', label:'Football Starter',
     color:0xd4b87a, emissive:0x110900,
     radius:2.3, orbitR:55, speed:0.0034, tilt:0.47,
     ring:true, atm:0xe6d39a, atmPow:4.2, gas:true,
     tex:'saturnmap.jpg', ringTex:'saturnringcolor.jpg',
-    desc:'CI/CD pipeline monitor with log streaming, deploy triggers, uptime alerts and team dashboards.',
-    tech:['React','Docker','Kubernetes','Prometheus'],
-    link:'#'
+    desc:'Team randomizer app for football/soccer pickup games. Quickly split players into balanced teams for casual matches.',
+    tech:['React','TypeScript','Supabase'],
+    images:['src/Football/1.jpg','src/Football/2.jpg','src/Football/3.jpg'],
+    github:'https://github.com/phuthao/Football-Starter',
+    link:'https://phuthao.github.io/Football-Starter/'
   },
   {
-    name:'Uranus', label:'About Me',
+    name:'Uranus', label:'SpinFood',
     color:0x7ecfcf, emissive:0x001111,
     radius:1.6, orbitR:69, speed:0.0012, tilt:1.71,
     atm:0x9fe6e6, atmPow:3.4, gas:true,
     tex:'uranusmap.jpg',
-    desc:'5+ years building full-stack web apps. Passionate about clean architecture, performance & great UX.',
-    tech:['TypeScript','Rust','Go','Linux'],
+    desc:'Fun food picker app. Spin the wheel when you don\'t know what to eat! AI-powered suggestions based on your taste preferences.',
+    tech:['Vue.js','AI'],
     link:'#'
   },
   {
-    name:'Neptune', label:'Contact Me',
+    name:'Neptune', label:'About Me',
     color:0x5578d8, emissive:0x000a22,
     radius:1.5, orbitR:83, speed:0.0006, tilt:0.49,
     atm:0x6a8cff, atmPow:3.2, gas:true,
     tex:'neptunemap.jpg',
-    desc:'Open for freelance & full-time roles. Let\'s build something great together. Reach out anytime!',
-    tech:['Email','LinkedIn','GitHub','Twitter'],
-    link:'mailto:hello@dev.vn'
+    desc:'Full-stack Engineer (3+ years) building scalable systems serving 10,000+ users. Passionate about AI integration, automation & clean architecture.',
+    contacts:[
+      {icon:'📱', label:'0938251200', href:'tel:0938251200'},
+      {icon:'💬', label:'Zalo', href:'https://zalo.me/0938251200'},
+      {icon:'📧', label:'Email', href:'mailto:phuthao19@outlook.com'},
+      {icon:'💼', label:'LinkedIn', href:'https://www.linkedin.com/in/robinle1902/'}
+    ],
+    tech:[],
+    link:'#'
   }
 ];
 
@@ -487,9 +601,9 @@ function makeStarField(count, minR, maxR, baseSize, opacity){
   scene.add(pts);
   return pts;
 }
-makeStarField(7000, 500, 1400, 0.7, 0.9);   // distant dust
-makeStarField(1400, 350, 900, 1.6, 0.95);   // mid bright stars
-const twinkleStars = makeStarField(220, 250, 700, 2.6, 1.0); // foreground sparkles
+makeStarField(3000, 500, 1400, 0.7, 0.9);   // distant dust
+makeStarField(600, 350, 900, 1.6, 0.95);   // mid bright stars
+const twinkleStars = makeStarField(120, 250, 700, 2.6, 1.0); // foreground sparkles
 
 // ── Faint nebula clouds for depth ───────────────────────────────
 function makeSoftSprite(hex){
@@ -754,6 +868,52 @@ async function buildPlanets(){
 }
 buildPlanets();
 
+// Build project sidebar
+function buildSidebar(){
+  const list = document.getElementById('project-list');
+  const colors = {
+    Mercury: '#b5b5b5', Venus: '#e8c56a', Earth: '#4a9de8', Mars: '#d4563a',
+    Jupiter: '#c8a472', Saturn: '#d4b87a', Uranus: '#7ecfcf', Neptune: '#5578d8',
+    Sun: '#ffd27a'
+  };
+  PLANETS.forEach((p, i) => {
+    const item = document.createElement('div');
+    item.className = 'proj-item';
+    item.innerHTML = `
+      <div class="proj-dot" style="background:${colors[p.name]};color:${colors[p.name]}"></div>
+      <div class="proj-info">
+        <div class="proj-planet">${p.name}</div>
+        <div class="proj-title">${p.label}</div>
+        <div class="proj-tech">${p.tech.slice(0,3).join(' · ')}</div>
+      </div>
+    `;
+    item.addEventListener('click', () => focusPlanet(i));
+    list.appendChild(item);
+  });
+
+  // Add Sun item
+  const sunItem = document.createElement('div');
+  sunItem.className = 'proj-item';
+  sunItem.innerHTML = `
+    <div class="proj-dot" style="background:${colors.Sun};color:${colors.Sun}"></div>
+    <div class="proj-info">
+      <div class="proj-planet">Sun</div>
+      <div class="proj-title">About Portfolio</div>
+      <div class="proj-tech">Three.js · WebGL · JS</div>
+    </div>
+  `;
+  sunItem.addEventListener('click', () => showSunContact());
+  list.appendChild(sunItem);
+}
+buildSidebar();
+
+// Update sidebar active state
+function updateSidebarActive(idx){
+  document.querySelectorAll('.proj-item').forEach((el, i) => {
+    el.classList.toggle('active', i === idx);
+  });
+}
+
 // ── Meteors, comets & shield impacts ───────────────────────────
 const glowTexShared = makeGlowTexture();
 const SECSKILLS = ['FIREWALL','WAF','OAuth 2.0','TLS 1.3','RATE LIMIT','JWT AUTH','AES-256','DDoS SHIELD','CSRF GUARD','ZERO TRUST','RBAC','2FA','PEN-TEST','HMAC'];
@@ -872,7 +1032,7 @@ let speedMult = 2;
 let activeIndex = -1;
 
 // Global orbit pace multiplier (higher = planets revolve faster)
-const ORBIT_BASE = 3.0;
+const ORBIT_BASE = 8;
 
 // Overview camera — defaults pulled WAY back & lifted so the whole
 // system (out to Neptune at orbitR 65) sits comfortably in frame.
@@ -1058,6 +1218,14 @@ canvas.addEventListener('click', e=>{
   mouse.x = (e.clientX/window.innerWidth)*2-1;
   mouse.y = -(e.clientY/window.innerHeight)*2+1;
   raycaster.setFromCamera(mouse, camera);
+
+  // Check sun click first
+  const sunHits = raycaster.intersectObject(sunMesh);
+  if(sunHits.length){
+    showSunContact();
+    return;
+  }
+
   const targets = planetMeshes.map(pm=>pm.mesh);
   const hits = raycaster.intersectObjects(targets);
   if(hits.length){
@@ -1073,6 +1241,15 @@ canvas.addEventListener('mousemove', e=>{
   mouse.x = (e.clientX/window.innerWidth)*2-1;
   mouse.y = -(e.clientY/window.innerHeight)*2+1;
   raycaster.setFromCamera(mouse, camera);
+
+  // Check sun hover
+  const sunHits = raycaster.intersectObject(sunMesh);
+  if(sunHits.length){
+    canvas.style.cursor = 'pointer';
+    hoverIndex = -1;
+    return;
+  }
+
   const targets = planetMeshes.map(pm=>pm.mesh);
   const hits = raycaster.intersectObjects(targets);
   if(hits.length){
@@ -1083,6 +1260,27 @@ canvas.addEventListener('mousemove', e=>{
     canvas.style.cursor = 'default';
   }
 });
+
+// Sun contact info
+function showSunContact(){
+  activeIndex = -1;
+  document.querySelectorAll('.ndot').forEach(d=>d.classList.remove('active'));
+  updateSidebarActive(-1);
+  document.getElementById('ip-planet').textContent = '☀ THE SUN';
+  document.getElementById('ip-title').textContent = 'About This Portfolio';
+  document.getElementById('ip-desc').textContent = 'Interactive 3D solar system portfolio built with Three.js. Each planet represents a project. Click to explore!';
+  document.getElementById('ip-gallery').innerHTML = '';
+  document.getElementById('ip-gallery').style.display = 'none';
+  document.getElementById('ip-tags').innerHTML = `
+    <span class="tag">Three.js</span>
+    <span class="tag">WebGL</span>
+    <span class="tag">JavaScript</span>
+    <span class="tag">CSS3</span>
+  `;
+  document.getElementById('ip-link').style.display = 'none';
+  document.getElementById('ip-github').style.display = 'none';
+  document.getElementById('info-panel').classList.add('show');
+}
 
 // Mouse drag — orbit in overview, free-look in ship mode
 let isDragging = false, dragMoved = false, lastMX=0, lastMY=0;
@@ -1116,11 +1314,43 @@ function focusPlanet(idx){
   document.getElementById('ip-planet').textContent = p.name.toUpperCase();
   document.getElementById('ip-title').textContent = p.label;
   document.getElementById('ip-desc').textContent = p.desc;
-  document.getElementById('ip-tags').innerHTML = p.tech.map(t=>`<span class="tag">${t}</span>`).join('');
+
+  // Gallery
+  const gallery = document.getElementById('ip-gallery');
+  if(p.images && p.images.length){
+    gallery.innerHTML = p.images.map(src => `<img src="${IMG_BASE}${src}" onclick="openLightbox('${IMG_BASE}${src}')">`).join('');
+    gallery.style.display = 'flex';
+  } else {
+    gallery.innerHTML = '';
+    gallery.style.display = 'none';
+  }
+
+  // Tags or Contact links
+  if(p.contacts && p.contacts.length){
+    document.getElementById('ip-tags').innerHTML = p.contacts.map(c =>
+      `<a class="tag" href="${c.href}" target="_blank" style="text-decoration:none;cursor:pointer;">${c.icon} ${c.label}</a>`
+    ).join('');
+  } else {
+    document.getElementById('ip-tags').innerHTML = p.tech.map(t=>`<span class="tag">${t}</span>`).join('');
+  }
+
   document.getElementById('ip-link').href = p.link;
+  document.getElementById('ip-link').style.display = p.link && p.link !== '#' ? 'inline-flex' : 'none';
+
+  // GitHub link
+  const ghBtn = document.getElementById('ip-github');
+  if(p.github){
+    ghBtn.href = p.github;
+    ghBtn.style.display = 'inline-flex';
+  } else {
+    ghBtn.style.display = 'none';
+  }
+
   document.getElementById('info-panel').classList.add('show');
   // update nav dots
   document.querySelectorAll('.ndot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+  // update sidebar
+  updateSidebarActive(idx);
   // in overview: swing camera toward that planet
   if(mode==='overview'){
     const pm = planetMeshes[idx];
@@ -1136,6 +1366,12 @@ function closeInfo(){
   activeIndex=-1;
   document.getElementById('info-panel').classList.remove('show');
   document.querySelectorAll('.ndot').forEach(d=>d.classList.remove('active'));
+  updateSidebarActive(-1);
+}
+
+function openLightbox(src){
+  document.getElementById('lb-img').src = src;
+  document.getElementById('lightbox').classList.add('show');
 }
 
 // reset to wide overview on double-click of empty space
