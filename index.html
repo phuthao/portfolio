@@ -319,6 +319,16 @@
     font-size:8px;color:rgba(200,210,230,.5);margin-top:2px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
+  .proj-badge{
+    font-size:6px;font-weight:600;letter-spacing:.05em;
+    padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:middle;
+  }
+  .proj-badge.demo{
+    background:rgba(122,255,178,.15);color:#7CFFB2;border:1px solid rgba(122,255,178,.3);
+  }
+  .proj-badge.img{
+    background:rgba(255,200,122,.15);color:#FFC87A;border:1px solid rgba(255,200,122,.3);
+  }
 </style>
 </head>
 <body>
@@ -938,10 +948,14 @@ function buildSidebar(){
   PLANETS.forEach((p, i) => {
     const item = document.createElement('div');
     item.className = 'proj-item';
+    const hasDemo = p.link && p.link !== '#';
+    const hasImages = p.images && p.images.length > 0;
+    const badges = (hasDemo ? '<span class="proj-badge demo">DEMO</span>' : '') +
+                   (hasImages ? '<span class="proj-badge img">IMG</span>' : '');
     item.innerHTML = `
       <div class="proj-dot" style="background:${colors[p.name]};color:${colors[p.name]}"></div>
       <div class="proj-info">
-        <div class="proj-planet">${p.name}</div>
+        <div class="proj-planet">${p.name} ${badges}</div>
         <div class="proj-title">${p.label}</div>
         <div class="proj-tech">${p.tech.slice(0,3).join(' · ')}</div>
       </div>
