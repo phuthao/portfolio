@@ -3,9 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Le Phu Thao - Full-Stack Developer Portfolio. Interactive 3D solar system showcasing AI, automation, and web development projects.">
+<meta name="theme-color" content="#01030a">
 <title>Dev Portfolio — Solar System</title>
+<!-- Preconnect to external domains for faster loading -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<!-- Preload critical resources -->
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" as="script">
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Inter:wght@300;400;500&display=swap" as="style">
+<!-- Non-blocking font load -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Inter:wght@300;400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Inter:wght@300;400;500&display=swap"></noscript>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Inter:wght@300;400;500&display=swap');
   *{margin:0;padding:0;box-sizing:border-box}
   html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Inter',sans-serif}
   #app{width:100%;height:100%;position:relative}
@@ -230,11 +242,12 @@
   #loader{
     position:absolute;inset:0;background:#000;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    z-index:100;transition:opacity .8s;
+    z-index:100;transition:opacity .8s;will-change:opacity;
   }
   #loader h2{font-family:'Orbitron',monospace;color:#7ad4ff;font-size:14px;letter-spacing:.2em;margin-bottom:16px;}
   #loader-bar{width:200px;height:2px;background:rgba(255,255,255,.1);border-radius:1px;}
-  #loader-fill{width:0%;height:100%;background:#7ad4ff;border-radius:1px;transition:width .3s;}
+  #loader-fill{width:0%;height:100%;background:#7ad4ff;border-radius:1px;transition:width .15s;}
+  #loader-text{font-family:'Orbitron',monospace;color:#7ad4ff;font-size:24px;font-weight:700;letter-spacing:.1em;margin-top:12px;}
 
   /* nav dots */
   #nav-dots{
@@ -314,6 +327,7 @@
   <div id="loader">
     <h2>INITIALIZING SOLAR PORTFOLIO SYSTEM</h2>
     <div id="loader-bar"><div id="loader-fill"></div></div>
+    <div id="loader-text">0%</div>
   </div>
   <canvas id="c"></canvas>
   <div id="planet-labels"></div>
@@ -398,7 +412,7 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
 <script>
 // ══════════════════════════════════════════════════════════════
 // CONFIG - Change this before deploy
@@ -502,8 +516,8 @@ const PLANETS = [
 
 // ── Three.js setup ──────────────────────────────────────────────
 const canvas = document.getElementById('c');
-const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false, powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false, powerPreference:'high-performance', stencil:false, depth:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
 renderer.setSize(window.innerWidth, window.innerHeight);
 // More photographic colour & light response
 renderer.outputEncoding = THREE.sRGBEncoding;
@@ -535,14 +549,41 @@ const TEX = 'https://cdn.jsdelivr.net/gh/jeromeetienne/threex.planets@master/ima
 const texLoader = new THREE.TextureLoader();
 texLoader.crossOrigin = 'anonymous';
 
+// Texture cache to avoid duplicate loads
+const texCache = new Map();
+
+// Loading progress tracking
+let totalTextures = 0;
+let loadedTextures = 0;
+const loaderFill = document.getElementById('loader-fill');
+const loaderText = document.getElementById('loader-text');
+
+function updateLoadProgress(){
+  const pct = totalTextures > 0 ? Math.round((loadedTextures / totalTextures) * 100) : 0;
+  loaderFill.style.width = pct + '%';
+  if(loaderText) loaderText.textContent = pct + '%';
+}
+
 // srgb=true for colour maps, false for data maps (bump/spec). Returns null on fail.
 function loadTex(url, srgb){
+  if(texCache.has(url)) return Promise.resolve(texCache.get(url));
+  totalTextures++;
+  updateLoadProgress();
   return new Promise(resolve => {
     texLoader.load(url, tex => {
       tex.encoding = srgb ? THREE.sRGBEncoding : THREE.LinearEncoding;
       tex.anisotropy = MAX_ANISO;
+      tex.generateMipmaps = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      texCache.set(url, tex);
+      loadedTextures++;
+      updateLoadProgress();
       resolve(tex);
-    }, undefined, () => resolve(null));
+    }, undefined, () => {
+      loadedTextures++;
+      updateLoadProgress();
+      resolve(null);
+    });
   });
 }
 
@@ -601,9 +642,9 @@ function makeStarField(count, minR, maxR, baseSize, opacity){
   scene.add(pts);
   return pts;
 }
-makeStarField(3000, 500, 1400, 0.7, 0.9);   // distant dust
-makeStarField(600, 350, 900, 1.6, 0.95);   // mid bright stars
-const twinkleStars = makeStarField(120, 250, 700, 2.6, 1.0); // foreground sparkles
+makeStarField(2000, 500, 1400, 0.7, 0.9);   // distant dust (reduced from 3000)
+makeStarField(400, 350, 900, 1.6, 0.95);   // mid bright stars (reduced from 600)
+const twinkleStars = makeStarField(80, 250, 700, 2.6, 1.0); // foreground sparkles (reduced from 120)
 
 // ── Faint nebula clouds for depth ───────────────────────────────
 function makeSoftSprite(hex){
@@ -635,7 +676,7 @@ nebulaColors.forEach((hex,i)=>{
 });
 
 // ── Sun ─────────────────────────────────────────────────────────
-const sunGeo = new THREE.SphereGeometry(3.5, 64, 64);
+const sunGeo = new THREE.SphereGeometry(3.5, 48, 48);
 const sunMat = new THREE.MeshBasicMaterial({color:0xffd27a});
 sunMat.toneMapped = false;
 const sunMesh = new THREE.Mesh(sunGeo, sunMat);
@@ -645,7 +686,7 @@ scene.add(sunMesh);
 function coronaShell(r, hex, op){
   const m = new THREE.MeshBasicMaterial({color:hex, transparent:true, opacity:op, side:THREE.BackSide});
   m.toneMapped=false;
-  const mesh = new THREE.Mesh(new THREE.SphereGeometry(r,32,32), m);
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(r,24,24), m);
   scene.add(mesh);
   return mesh;
 }
@@ -688,7 +729,7 @@ function makeAtmosphere(radius, hex, power){
     side:THREE.BackSide, blending:THREE.AdditiveBlending, transparent:true, depthWrite:false
   });
   mat.toneMapped = false;
-  return new THREE.Mesh(new THREE.SphereGeometry(radius, 48, 48), mat);
+  return new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 32), mat);
 }
 
 // ── Energy shield (hidden until an impact, then flares) ─────────
@@ -715,7 +756,7 @@ function makeShield(radius, hex){
     transparent:true, blending:THREE.AdditiveBlending, side:THREE.DoubleSide, depthWrite:false
   });
   mat.toneMapped = false;
-  return new THREE.Mesh(new THREE.SphereGeometry(radius, 48, 48), mat);
+  return new THREE.Mesh(new THREE.SphereGeometry(radius, 24, 24), mat);
 }
 
 // ── Saturn ring texture (banded, with Cassini gap) ──────────────
@@ -740,7 +781,7 @@ function makeRingTexture(){
 
 // Orbit rings (flat torus)
 PLANETS.forEach(p => {
-  const ringGeo = new THREE.TorusGeometry(p.orbitR, 0.025, 2, 220);
+  const ringGeo = new THREE.TorusGeometry(p.orbitR, 0.025, 2, 128);
   const ringMat = new THREE.MeshBasicMaterial({color:0x33597d, transparent:true, opacity:0.35});
   ringMat.toneMapped = false;
   const ring = new THREE.Mesh(ringGeo, ringMat);
@@ -751,18 +792,26 @@ PLANETS.forEach(p => {
 // Planet meshes
 const planetMeshes = [];
 const planetAngles = PLANETS.map((_,i)=> i * (Math.PI*2/PLANETS.length));
-let loadedCount = 0;
 
 async function buildPlanets(){
+  // Preload all textures in parallel for faster loading
+  const texPromises = PLANETS.map(async (p, idx) => {
+    const [colorTex, bumpTex, specTex, cloudTex, ringTex] = await Promise.all([
+      loadTex(TEX+p.tex, true),
+      p.bump ? loadTex(TEX+p.bump, false) : Promise.resolve(null),
+      p.spec ? loadTex(TEX+p.spec, false) : Promise.resolve(null),
+      p.clouds ? loadTex(TEX+p.clouds, true) : Promise.resolve(null),
+      p.ringTex ? loadTex(TEX+p.ringTex, true) : Promise.resolve(null)
+    ]);
+    return { colorTex: colorTex || fallbackTex(p.color), bumpTex, specTex, cloudTex, ringTex };
+  });
+  const allTextures = await Promise.all(texPromises);
+
   for(let i=0;i<PLANETS.length;i++){
     const p = PLANETS[i];
-    const colorTex = (await loadTex(TEX+p.tex, true)) || fallbackTex(p.color);
-    const bumpTex  = p.bump ? await loadTex(TEX+p.bump, false) : null;
-    const specTex  = p.spec ? await loadTex(TEX+p.spec, false) : null;
-    loadedCount++;
-    document.getElementById('loader-fill').style.width = (loadedCount/PLANETS.length*100)+'%';
+    const { colorTex, bumpTex, specTex, cloudTex, ringTex } = allTextures[i];
 
-    const geo = new THREE.SphereGeometry(p.radius, 64, 64);
+    const geo = new THREE.SphereGeometry(p.radius, 48, 48);
     const matOpts = {
       map: colorTex,
       emissive: new THREE.Color(p.emissive),
@@ -784,16 +833,13 @@ async function buildPlanets(){
 
     // Cloud layer (Earth)
     let cloudMesh = null;
-    if(p.clouds){
-      const cloudTex = await loadTex(TEX+p.clouds, true);
-      if(cloudTex){
-        const cm = new THREE.MeshStandardMaterial({
-          color:0xffffff, alphaMap:cloudTex, transparent:true,
-          depthWrite:false, roughness:1, metalness:0, opacity:0.85
-        });
-        cloudMesh = new THREE.Mesh(new THREE.SphereGeometry(p.radius*1.015, 48, 48), cm);
-        mesh.add(cloudMesh);
-      }
+    if(cloudTex){
+      const cm = new THREE.MeshStandardMaterial({
+        color:0xffffff, alphaMap:cloudTex, transparent:true,
+        depthWrite:false, roughness:1, metalness:0, opacity:0.85
+      });
+      cloudMesh = new THREE.Mesh(new THREE.SphereGeometry(p.radius*1.015, 32, 32), cm);
+      mesh.add(cloudMesh);
     }
 
     // Atmosphere shell
@@ -814,8 +860,7 @@ async function buildPlanets(){
 
     // Saturn ring — real ring colour strip, mapped radially
     if(p.ring){
-      const ringTex = p.ringTex ? await loadTex(TEX+p.ringTex, true) : null;
-      const rGeo = new THREE.RingGeometry(p.radius*1.35, p.radius*2.35, 160);
+      const rGeo = new THREE.RingGeometry(p.radius*1.35, p.radius*2.35, 96);
       const rMat = new THREE.MeshBasicMaterial({
         map: ringTex || null,
         color: ringTex ? 0xffffff : 0xc8b060,
@@ -1318,7 +1363,7 @@ function focusPlanet(idx){
   // Gallery
   const gallery = document.getElementById('ip-gallery');
   if(p.images && p.images.length){
-    gallery.innerHTML = p.images.map(src => `<img src="${IMG_BASE}${src}" onclick="openLightbox('${IMG_BASE}${src}')">`).join('');
+    gallery.innerHTML = p.images.map(src => `<img src="${IMG_BASE}${src}" loading="lazy" decoding="async" onclick="openLightbox('${IMG_BASE}${src}')">`).join('');
     gallery.style.display = 'flex';
   } else {
     gallery.innerHTML = '';
