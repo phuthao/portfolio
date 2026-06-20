@@ -244,6 +244,7 @@
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     z-index:100;transition:opacity .8s;will-change:opacity;
   }
+  #loader-year{font-family:'Orbitron',monospace;color:#7ad4ff;font-size:48px;font-weight:700;letter-spacing:.3em;margin-bottom:8px;}
   #loader h2{font-family:'Orbitron',monospace;color:#7ad4ff;font-size:14px;letter-spacing:.2em;margin-bottom:16px;}
   #loader-bar{width:200px;height:2px;background:rgba(255,255,255,.1);border-radius:1px;}
   #loader-fill{width:0%;height:100%;background:#7ad4ff;border-radius:1px;transition:width .15s;}
@@ -335,6 +336,7 @@
 <div id="app">
   <div id="lightbox" onclick="this.classList.remove('show')"><img id="lb-img" src=""></div>
   <div id="loader">
+    <div id="loader-year"></div>
     <h2>INITIALIZING SOLAR PORTFOLIO SYSTEM</h2>
     <div id="loader-bar"><div id="loader-fill"></div></div>
     <div id="loader-text">0%</div>
@@ -570,12 +572,16 @@ let loadedTextures = 0;
 const loaderFill = document.getElementById('loader-fill');
 const loaderText = document.getElementById('loader-text');
 const loaderEl = document.getElementById('loader');
+const loaderYear = document.getElementById('loader-year');
+
+// Set current year
+if(loaderYear) loaderYear.textContent = new Date().getFullYear();
 
 // If returning visitor, show quick loader
 if(hasVisitedBefore){
   loaderFill.style.transition = 'none';
   loaderFill.style.width = '100%';
-  if(loaderText) loaderText.textContent = 'WELCOME BACK 2026';
+  if(loaderText) loaderText.textContent = 'WELCOME BACK';
 }
 
 function updateLoadProgress(){
