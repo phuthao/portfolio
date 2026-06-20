@@ -552,13 +552,26 @@ texLoader.crossOrigin = 'anonymous';
 // Texture cache to avoid duplicate loads
 const texCache = new Map();
 
+// Check if user has visited before (textures likely cached by browser)
+const CACHE_KEY = 'portfolio_visited_v1';
+const hasVisitedBefore = localStorage.getItem(CACHE_KEY) === 'true';
+
 // Loading progress tracking
 let totalTextures = 0;
 let loadedTextures = 0;
 const loaderFill = document.getElementById('loader-fill');
 const loaderText = document.getElementById('loader-text');
+const loaderEl = document.getElementById('loader');
+
+// If returning visitor, show quick loader
+if(hasVisitedBefore){
+  loaderFill.style.transition = 'none';
+  loaderFill.style.width = '100%';
+  if(loaderText) loaderText.textContent = 'WELCOME BACK';
+}
 
 function updateLoadProgress(){
+  if(hasVisitedBefore) return; // Skip progress updates for cached visits
   const pct = totalTextures > 0 ? Math.round((loadedTextures / totalTextures) * 100) : 0;
   loaderFill.style.width = pct + '%';
   if(loaderText) loaderText.textContent = pct + '%';
@@ -906,10 +919,13 @@ async function buildPlanets(){
     document.getElementById('nav-dots').appendChild(dot);
   }
 
-  // hide loader
-  const loader = document.getElementById('loader');
-  loader.style.opacity='0';
-  setTimeout(()=>loader.style.display='none',800);
+  // Mark as visited for future fast loads
+  localStorage.setItem(CACHE_KEY, 'true');
+
+  // Hide loader (faster for returning visitors)
+  const hideDelay = hasVisitedBefore ? 300 : 800;
+  loaderEl.style.opacity='0';
+  setTimeout(()=>loaderEl.style.display='none', hideDelay);
 }
 buildPlanets();
 
