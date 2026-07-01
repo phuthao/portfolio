@@ -192,6 +192,75 @@
   #crosshair::before{width:1px;height:100%;left:50%;top:0;}
   #crosshair::after{width:100%;height:1px;top:50%;left:0;}
 
+  /* Planet beam selector - cylinder style */
+  #planet-portal{
+    position:absolute;pointer-events:none;z-index:15;
+    opacity:0;transition:opacity .4s;
+    transform:translate(-50%,-50%);
+  }
+  #planet-portal.show{opacity:1;}
+  #planet-portal .beam-container{
+    position:relative;
+  }
+  /* Top ellipse */
+  #planet-portal .beam-top{
+    position:absolute;top:0;left:50%;transform:translateX(-50%);
+    border:2px solid rgba(122,212,255,.8);
+    border-radius:50%;
+    box-shadow:0 0 15px rgba(122,212,255,.6), inset 0 0 20px rgba(122,212,255,.2);
+    animation:beamPulse 2s ease-in-out infinite;
+  }
+  /* Bottom ellipse */
+  #planet-portal .beam-bottom{
+    position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+    border:2px solid rgba(122,212,255,.6);
+    border-radius:50%;
+    box-shadow:0 0 12px rgba(122,212,255,.5), inset 0 0 15px rgba(122,212,255,.15);
+    animation:beamPulse 2s ease-in-out infinite .5s;
+  }
+  /* Vertical beam lines */
+  #planet-portal .beam-line{
+    position:absolute;top:0;
+    width:2px;height:100%;
+    background:linear-gradient(to bottom, rgba(122,212,255,.8), rgba(122,212,255,.3));
+    box-shadow:0 0 8px rgba(122,212,255,.6);
+    animation:beamFlicker 1.5s ease-in-out infinite;
+  }
+  #planet-portal .beam-line:nth-child(3){animation-delay:.2s;}
+  #planet-portal .beam-line:nth-child(4){animation-delay:.4s;}
+  #planet-portal .beam-line:nth-child(5){animation-delay:.6s;}
+  /* Glow fill */
+  #planet-portal .beam-glow{
+    position:absolute;top:10%;left:10%;right:10%;bottom:10%;
+    background:linear-gradient(to bottom, rgba(122,212,255,.15), rgba(122,212,255,.05));
+    border-radius:50% / 10%;
+    animation:beamPulse 2s ease-in-out infinite;
+  }
+  /* Particles rising */
+  #planet-portal .particle{
+    position:absolute;width:3px;height:3px;
+    background:rgba(255,255,255,.9);
+    border-radius:50%;
+    animation:particleRise 2s ease-out infinite;
+  }
+  #planet-portal .particle:nth-child(7){left:20%;animation-delay:0s;}
+  #planet-portal .particle:nth-child(8){left:40%;animation-delay:.4s;}
+  #planet-portal .particle:nth-child(9){left:60%;animation-delay:.8s;}
+  #planet-portal .particle:nth-child(10){left:80%;animation-delay:1.2s;}
+  @keyframes beamPulse{
+    0%,100%{opacity:.7;}
+    50%{opacity:1;}
+  }
+  @keyframes beamFlicker{
+    0%,100%{opacity:.6;}
+    50%{opacity:1;}
+  }
+  @keyframes particleRise{
+    0%{bottom:10%;opacity:0;transform:scale(0);}
+    20%{opacity:1;transform:scale(1);}
+    100%{bottom:90%;opacity:0;transform:scale(0);}
+  }
+
   /* Mode label */
   #mode-label{
     position:absolute;top:68px;right:32px;
@@ -329,6 +398,42 @@
   }
   .proj-badge.img{
     background:rgba(255,200,122,.15);color:#FFC87A;border:1px solid rgba(255,200,122,.3);
+  }
+  .proj-badge.locked{
+    background:rgba(255,255,255,.1);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.2);
+  }
+  .proj-item.locked{
+    opacity:0.6;
+  }
+  .proj-item.locked:hover{
+    opacity:0.8;
+  }
+
+  /* Locked tooltip */
+  .locked-tooltip{
+    position:absolute;left:100%;top:50%;transform:translateY(-50%);
+    margin-left:8px;padding:6px 10px;
+    background:rgba(2,8,24,.95);border:1px solid rgba(255,200,100,.3);
+    border-radius:6px;white-space:nowrap;
+    font-size:10px;color:#FFC87A;
+    opacity:0;pointer-events:none;
+    transition:opacity .2s;z-index:100;
+  }
+  .proj-item.locked:hover .locked-tooltip{
+    opacity:1;
+  }
+
+  /* Locked label on planet popup */
+  .plabel.locked .pl-card{
+    border-color:rgba(255,200,100,.3);
+  }
+  .plabel .pl-locked{
+    display:none;
+    font-size:8px;color:#FFC87A;margin-top:4px;
+    letter-spacing:.08em;
+  }
+  .plabel.locked .pl-locked{
+    display:block;
   }
 
   /* ══════════════════════════════════════════════════════════════
@@ -625,6 +730,21 @@
       <input type="range" id="speed-slider" min="0.1" max="8" step="0.1" value="4">
     </div>
     <div id="crosshair"></div>
+    <div id="planet-portal">
+      <div class="beam-container">
+        <div class="beam-top"></div>
+        <div class="beam-line"></div>
+        <div class="beam-line"></div>
+        <div class="beam-line"></div>
+        <div class="beam-line"></div>
+        <div class="beam-glow"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="beam-bottom"></div>
+      </div>
+    </div>
     <div id="nav-dots"></div>
   </div>
 </div>
@@ -671,7 +791,7 @@ const PLANETS = [
     link:'#'
   },
   {
-    name:'Mars', label:'AI Health Assistant',
+    name:'Mars', label:'AI Healthcare Assistant',
     color:0xd4563a, emissive:0x1a0800,
     radius:0.53, orbitR:28, speed:0.0053, tilt:0.44,
     atm:0xd97a4a, atmPow:5.0,
@@ -699,7 +819,8 @@ const PLANETS = [
     tex:'saturnmap.jpg', ringTex:'saturnringcolor.jpg',
     desc:'AI-powered news summarization tool. Automatically extracts key points from articles and generates concise summaries for quick reading.',
     tech:['Tavily Search','Gemini AI','Next.js'],
-    link:'#'
+    link:'#',
+    locked: true
   },
   {
     name:'Uranus', label:'Be Smart Choose',
@@ -709,7 +830,8 @@ const PLANETS = [
     tex:'uranusmap.jpg',
     desc:'Smart decision-making assistant. Helps you make better choices by analyzing options, weighing pros/cons, and providing AI-powered recommendations.',
     tech:['Brave Search API','AI'],
-    link:'#'
+    link:'#',
+    locked: true
   },
   {
     name:'Neptune', label:'About Me',
@@ -725,7 +847,8 @@ const PLANETS = [
       {icon:'💼', label:'LinkedIn', href:'https://www.linkedin.com/in/robinle1902/'}
     ],
     tech:[],
-    link:'#'
+    link:'#',
+    locked: true
   }
 ];
 
@@ -1127,13 +1250,17 @@ async function buildPlanets(){
 
     // floating auto popup label
     const label = document.createElement('div');
-    label.className = 'plabel';
-    label.innerHTML =
-      '<div class="pl-card">' +
-        '<div class="pl-name">'+p.name+'</div>' +
-        '<div class="pl-title">'+p.label+'</div>' +
-        '<div class="pl-tags">'+ p.tech.map(t=>'<span class="pl-tag">'+t+'</span>').join('') +'</div>' +
-      '</div><div class="pl-stem"></div>';
+    label.className = 'plabel' + (p.locked ? ' locked' : '');
+    const labelContent = p.locked
+      ? '<div class="pl-card">' +
+          '<div class="pl-name">'+p.name+' 🔒</div>' +
+        '</div><div class="pl-stem"></div>'
+      : '<div class="pl-card">' +
+          '<div class="pl-name">'+p.name+'</div>' +
+          '<div class="pl-title">'+p.label+'</div>' +
+          '<div class="pl-tags">'+ p.tech.map(t=>'<span class="pl-tag">'+t+'</span>').join('') +'</div>' +
+        '</div><div class="pl-stem"></div>';
+    label.innerHTML = labelContent;
     document.getElementById('planet-labels').appendChild(label);
 
     planetMeshes.push({mesh, group, planet:p, angle: planetAngles[i], clouds: cloudMesh, label, shield, shieldMat: shield.material});
@@ -1166,33 +1293,40 @@ function buildSidebar(){
   };
   PLANETS.forEach((p, i) => {
     const item = document.createElement('div');
-    item.className = 'proj-item';
+    item.className = 'proj-item' + (p.locked ? ' locked' : '');
     const hasDemo = p.link && p.link !== '#';
     const hasImages = p.images && p.images.length > 0;
-    const badges = (hasDemo ? '<span class="proj-badge demo">DEMO</span>' : '') +
+    const badges = (p.locked ? '<span class="proj-badge locked">🔒</span>' : '') +
+                   (hasDemo ? '<span class="proj-badge demo">DEMO</span>' : '') +
                    (hasImages ? '<span class="proj-badge img">IMG</span>' : '');
+    const tooltip = p.locked ? '<div class="locked-tooltip">🚧 Coming Soon...</div>' : '';
+    const infoContent = p.locked
+      ? `<div class="proj-planet">${p.name} ${badges}</div>
+         <div class="proj-title" style="color:rgba(255,200,100,.6)">Coming Soon...</div>`
+      : `<div class="proj-planet">${p.name} ${badges}</div>
+         <div class="proj-title">${p.label}</div>
+         <div class="proj-tech">${p.tech.slice(0,3).join(' · ')}</div>`;
     item.innerHTML = `
       <div class="proj-dot" style="background:${colors[p.name]};color:${colors[p.name]}"></div>
       <div class="proj-info">
-        <div class="proj-planet">${p.name} ${badges}</div>
-        <div class="proj-title">${p.label}</div>
-        <div class="proj-tech">${p.tech.slice(0,3).join(' · ')}</div>
+        ${infoContent}
       </div>
+      ${tooltip}
     `;
     item.addEventListener('click', () => focusPlanet(i));
     list.appendChild(item);
   });
 
-  // Add Sun item
+  // Add Sun item (locked)
   const sunItem = document.createElement('div');
-  sunItem.className = 'proj-item';
+  sunItem.className = 'proj-item locked';
   sunItem.innerHTML = `
     <div class="proj-dot" style="background:${colors.Sun};color:${colors.Sun}"></div>
     <div class="proj-info">
-      <div class="proj-planet">Sun</div>
-      <div class="proj-title">About Portfolio</div>
-      <div class="proj-tech">Three.js · WebGL · JS</div>
+      <div class="proj-planet">Sun <span class="proj-badge locked">🔒</span></div>
+      <div class="proj-title" style="color:rgba(255,200,100,.6)">Coming Soon...</div>
     </div>
+    <div class="locked-tooltip">🚧 Coming Soon...</div>
   `;
   sunItem.addEventListener('click', () => showSunContact());
   list.appendChild(sunItem);
@@ -1432,6 +1566,74 @@ function rectsOverlap(a,b,pad){
            a.bottom+pad < b.top || a.top-pad > b.bottom);
 }
 const _toObj = new THREE.Vector3();
+const _portalPos = new THREE.Vector3();
+const planetPortal = document.getElementById('planet-portal');
+const beamContainer = planetPortal.querySelector('.beam-container');
+const beamTop = planetPortal.querySelector('.beam-top');
+const beamBottom = planetPortal.querySelector('.beam-bottom');
+const beamLines = planetPortal.querySelectorAll('.beam-line');
+let _lastBeamWidth = 0, _lastBeamHeight = 0, _lastPortalX = 0, _lastPortalY = 0;
+
+function updatePlanetPortal(){
+  // Fix #1: Don't show portal for locked planets
+  if(activeIndex < 0 || !planetMeshes[activeIndex] || PLANETS[activeIndex].locked){
+    if(planetPortal.classList.contains('show')) planetPortal.classList.remove('show');
+    return;
+  }
+  const pm = planetMeshes[activeIndex];
+  pm.mesh.getWorldPosition(_portalPos);
+
+  // Fix #3: Reuse _toObj instead of clone() - calculate distance before projection
+  _toObj.copy(_portalPos).sub(camera.position);
+  camera.getWorldDirection(_fwd);
+  if(_toObj.dot(_fwd) <= 0){
+    if(planetPortal.classList.contains('show')) planetPortal.classList.remove('show');
+    return;
+  }
+
+  // Fix #4: Calculate distance before projection (reuse _toObj)
+  const dist = _toObj.length();
+
+  // Project to screen
+  _portalPos.project(camera);
+  const x = Math.round((_portalPos.x * 0.5 + 0.5) * window.innerWidth);
+  const y = Math.round((-_portalPos.y * 0.5 + 0.5) * window.innerHeight);
+
+  // Calculate beam size based on planet size and distance
+  const projFactor = (window.innerHeight * 0.5) / Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5));
+  const radPx = (pm.planet.radius / dist) * projFactor;
+  const beamWidth = Math.round(Math.max(50, radPx * 2.2));
+  const beamHeight = Math.round(Math.max(80, radPx * 3));
+  const ellipseHeight = Math.round(beamWidth * 0.3);
+
+  // Fix #5: Only update DOM if values changed
+  if(beamWidth !== _lastBeamWidth || beamHeight !== _lastBeamHeight){
+    beamContainer.style.width = beamWidth + 'px';
+    beamContainer.style.height = beamHeight + 'px';
+    beamTop.style.width = beamWidth + 'px';
+    beamTop.style.height = ellipseHeight + 'px';
+    beamBottom.style.width = beamWidth + 'px';
+    beamBottom.style.height = ellipseHeight + 'px';
+    // Fix #2: Use (beamLines.length - 1) for full 0-180° coverage
+    beamLines.forEach((line, i) => {
+      const angle = (i / (beamLines.length - 1)) * Math.PI;
+      const offsetX = Math.cos(angle) * (beamWidth / 2 - 2);
+      line.style.left = (beamWidth / 2 + offsetX) + 'px';
+    });
+    _lastBeamWidth = beamWidth;
+    _lastBeamHeight = beamHeight;
+  }
+
+  if(x !== _lastPortalX || y !== _lastPortalY){
+    planetPortal.style.left = x + 'px';
+    planetPortal.style.top = y + 'px';
+    _lastPortalX = x;
+    _lastPortalY = y;
+  }
+
+  if(!planetPortal.classList.contains('show')) planetPortal.classList.add('show');
+}
+
 function updateLabels(){
   if(!labelsOn) return;
   const W = window.innerWidth, H = window.innerHeight;
@@ -1605,6 +1807,15 @@ canvas.addEventListener('wheel', e=>{
 function focusPlanet(idx){
   activeIndex = idx;
   const p = PLANETS[idx];
+
+  // If locked, don't show info panel
+  if(p.locked){
+    document.getElementById('info-panel').classList.remove('show');
+    document.querySelectorAll('.ndot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+    updateSidebarActive(idx);
+    return;
+  }
+
   document.getElementById('ip-planet').textContent = p.name.toUpperCase();
   document.getElementById('ip-title').textContent = p.label;
   document.getElementById('ip-desc').textContent = p.desc;
@@ -1661,6 +1872,7 @@ function closeInfo(){
   document.getElementById('info-panel').classList.remove('show');
   document.querySelectorAll('.ndot').forEach(d=>d.classList.remove('active'));
   updateSidebarActive(-1);
+  planetPortal.classList.remove('show');
 }
 
 function openLightbox(src){
@@ -1738,6 +1950,7 @@ function animate(){
   camera.lookAt(camLook);
 
   updateLabels();
+  updatePlanetPortal();
   updateProjectiles(dt);
   if(mode==='ship') updateCockpit(dt);
   renderer.render(scene, camera);
